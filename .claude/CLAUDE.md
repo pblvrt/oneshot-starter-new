@@ -1,164 +1,150 @@
+# Vibecoder Starter Template
 
-# Project Overview
+You are helping a vibecoder (non-technical user) build their app idea. Your job is to read their app description and build it for them.
 
-This is a Next.js starter template with:
-- **Next.js 15** with App Router and TypeScript
-- **Tailwind CSS v4** for styling
-- **shadcn/ui** for UI components (all components pre-installed)
-- **Supabase** for authentication and database
-- **OpenRouter** for AI/LLM integration
-- **DevContainer** for CodeSandbox with local Supabase
+**The current code is just a starter template.** Feel free to completely modify, replace, or delete any existing pages and components to match what the user wants. Nothing is sacred—rebuild everything to fit their vision.
 
-## Project Structure
+## Your Workflow
+
+1. **Read the app spec** in `documentation/` folder
+2. **Build the app** using the stack below
+3. **Test it** in the browser at port 3000
+4. **Iterate** based on feedback
+
+## Environment
+
+This repo runs in a **GitHub Codespace**. Everything is pre-configured:
+
+- **Port 3000**: Next.js app (auto-opens)
+- **Port 8090**: PocketBase database + Admin UI at `/_/`
+
+### URL Routing (Important!)
+
+The `.devcontainer/setup.sh` generates two PocketBase URLs:
+
+| Variable                     | Value                               | Used By           |
+| ---------------------------- | ----------------------------------- | ----------------- |
+| `NEXT_PUBLIC_POCKETBASE_URL` | `https://{codespace}-8090.{domain}` | Browser           |
+| `POCKETBASE_URL`             | `http://pocketbase:8090`            | Server (internal) |
+
+Browser can't reach Docker internal network, so it uses the public Codespace URL.
+
+## Stack
+
+| Tool        | Purpose         | Location             |
+| ----------- | --------------- | -------------------- |
+| Next.js 16  | App framework   | `src/app/`           |
+| Tailwind v4 | Styling         | Classes in JSX       |
+| shadcn/ui   | UI components   | `src/components/ui/` |
+| PocketBase  | Auth + Database | `@/lib/pocketbase`   |
+| OpenRouter  | AI/LLM          | `@/lib/ai`           |
+
+## Building Pages
+
+Next.js App Router uses file-based routing:
 
 ```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── api/chat/           # Streaming chat API endpoint
-│   ├── auth/
-│   │   └── callback/       # OAuth callback handler
-│   └── page.tsx            # Home page
-├── components/
-│   └── ui/                 # shadcn/ui components (50+ components)
-└── lib/
-    ├── ai/                 # OpenRouter AI configuration
-    │   ├── openrouter.ts   # Client and model definitions
-    │   ├── chat.ts         # Chat helper functions
-    │   └── index.ts        # Exports
-    ├── supabase/           # Supabase configuration
-    │   ├── client.ts       # Browser client
-    │   ├── server.ts       # Server client
-    │   ├── middleware.ts   # Session refresh middleware
-    │   └── auth.ts         # Auth helper functions
-    └── utils.ts            # Utility functions (cn)
+src/app/
+├── page.tsx              → /
+├── login/page.tsx        → /login
+├── dashboard/page.tsx    → /dashboard
+├── posts/[id]/page.tsx   → /posts/123
+└── api/chat/route.ts     → /api/chat
 ```
 
-## Getting Started
+**Create a page**: Add `page.tsx` in a folder under `src/app/`
 
-### Option 1: CodeSandbox / DevContainer (Recommended)
+## Using PocketBase
 
-Open this project in CodeSandbox - it will automatically:
-1. Start the devcontainer with Node.js 20
-2. Spin up local Supabase (Postgres, Auth, REST API, Studio)
-3. Install dependencies and start the dev server
-
-**Local Supabase URLs:**
-- App: `http://localhost:3000`
-- Supabase API: `http://localhost:8000`
-- Supabase Studio: `http://localhost:3002`
-- Inbucket (email testing): `http://localhost:9000`
-
-### Option 2: Manual Setup
-
-1. Copy `.env.local.example` to `.env.local` and add your credentials
-2. Run `npm install` to install dependencies
-3. Run `npm run dev` to start the development server
-
-## DevContainer Services
-
-The devcontainer includes a full Supabase stack:
-
-| Service | Port | Description |
-|---------|------|-------------|
-| App | 3000 | Next.js dev server |
-| Kong | 8000 | Supabase API gateway |
-| Studio | 3002 | Supabase dashboard |
-| Postgres | 5432 | Database |
-| Auth | 9999 | GoTrue auth service |
-| Inbucket | 9000 | Email testing UI |
-
-**Default credentials (local only):**
-```
-Anon Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-Service Role: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
-DB Password: postgres
-```
-
-## OpenRouter AI Setup
-
-1. Get an API key from https://openrouter.ai/keys
-2. Add `OPENROUTER_API_KEY` to `.env.local`
-
-### AI Functions Available
+### Auth (Client-Side)
 
 ```typescript
-import { chat, chatStream, generate, models } from "@/lib/ai";
+import { signInWithEmail, signUpWithEmail, signOut, getCurrentUser } from "@/lib/pocketbase";
 
-// Simple generation
-const response = await generate("Write a haiku about coding");
+await signUpWithEmail(email, password);
+await signInWithEmail(email, password);
+await signOut();
+const user = getCurrentUser();
+```
 
-// Chat with messages
+### Auth (Server-Side)
+
+```typescript
+import { createServerClient, getServerUser } from "@/lib/pocketbase/server";
+
+const pb = await createServerClient();
+const user = await getServerUser();
+```
+
+### Database Operations
+
+```typescript
+import { pb } from "@/lib/pocketbase";
+
+// Create
+await pb.collection("posts").create({ title: "Hello", content: "World" });
+
+// Read
+const posts = await pb.collection("posts").getList(1, 20);
+const post = await pb.collection("posts").getOne("RECORD_ID");
+
+// Update
+await pb.collection("posts").update("RECORD_ID", { title: "Updated" });
+
+// Delete
+await pb.collection("posts").delete("RECORD_ID");
+```
+
+**Important**: Create collections in PocketBase Admin (`/_/`) before using them.
+
+### Protecting Routes
+
+Add to `src/lib/pocketbase/middleware.ts`:
+
+```typescript
+if (!pbAuth && request.nextUrl.pathname.startsWith('/dashboard')) {
+  return NextResponse.redirect(new URL('/login', request.url));
+}
+```
+
+## Using AI (OpenRouter)
+
+Requires `OPENROUTER_API_KEY` in `.env.local`.
+
+```typescript
+import { chat, generate } from "@/lib/ai";
+
+const response = await generate("Write a tagline for my app");
 const response = await chat([
-  { role: "system", content: "You are a helpful assistant" },
   { role: "user", content: "Hello!" }
 ]);
-
-// Streaming chat
-const stream = await chatStream(messages);
-for await (const chunk of stream) {
-  console.log(chunk.choices[0]?.delta?.content);
-}
-
-// Use different models
-const response = await chat(messages, { model: models.gpt4o });
 ```
 
-### Available Models
+## UI Components
 
-- `models.claude4Opus` / `models.claude4Sonnet` / `models.claudeHaiku`
-- `models.gpt4o` / `models.gpt4oMini` / `models.o1`
-- `models.gemini2Flash` / `models.geminiPro`
-- `models.llama33` / `models.deepseekChat` / `models.qwen25`
+All shadcn/ui components are in `src/components/ui/`. Use them like:
 
-### Chat API Endpoint
+```tsx
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
-POST to `/api/chat` with:
-```json
-{
-  "messages": [{ "role": "user", "content": "Hello" }],
-  "model": "anthropic/claude-sonnet-4" // optional
-}
+<Button variant="default">Click me</Button>
+<Card>
+  <CardHeader><CardTitle>Title</CardTitle></CardHeader>
+  <CardContent>Content here</CardContent>
+</Card>
 ```
-
-## Supabase Setup (Production)
-
-1. Create a project at https://supabase.com
-2. Get your project URL and anon key from Settings > API
-3. Add them to `.env.local`
-
-### Auth Functions Available
-
-- `signInWithEmail(email, password)` - Email/password sign in
-- `signUpWithEmail(email, password)` - Email/password sign up
-- `signOut()` - Sign out current user
-- `signInWithOAuth(provider)` - OAuth sign in (google, github, discord)
-- `resetPassword(email)` - Send password reset email
-- `updatePassword(password)` - Update user password
-
-## shadcn/ui Components
-
-All 50+ shadcn/ui components are pre-installed:
-
-```
-accordion, alert, alert-dialog, aspect-ratio, avatar, badge, breadcrumb,
-button, button-group, calendar, card, carousel, chart, checkbox, collapsible,
-command, context-menu, dialog, drawer, dropdown-menu, empty, field, form,
-hover-card, input, input-group, input-otp, item, kbd, label, menubar,
-navigation-menu, pagination, popover, progress, radio-group, resizable,
-scroll-area, select, separator, sheet, sidebar, skeleton, slider, sonner,
-spinner, switch, table, tabs, textarea, toggle, toggle-group, tooltip
-```
-
-## MCP Servers
-
-This project includes MCP server configurations for:
-- **Supabase MCP** - Database and auth operations
-- **Context7** - Documentation lookup
-
-Set `SUPABASE_ACCESS_TOKEN` in your environment to use the Supabase MCP.
 
 ## Commands
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run lint` - Run ESLint
+- `bun dev` - Start dev server
+- `bun build` - Build for production
+
+## When You Start
+
+1. Check `documentation/` for the app spec
+2. Plan the pages and data models needed
+3. Create PocketBase collections if needed (via Admin UI)
+4. Build pages one at a time, testing each
+5. Style with Tailwind and shadcn/ui components

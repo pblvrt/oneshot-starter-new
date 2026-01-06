@@ -23,8 +23,9 @@
       "onAutoForward": "openBrowser"
     },
     "8090": {
-      "label": "PocketBase Admin",
-      "onAutoForward": "notify"
+      "label": "PocketBase API",
+      "onAutoForward": "notify",
+      "visibility": "public"
     }
   },
   "postCreateCommand": "npm install",
