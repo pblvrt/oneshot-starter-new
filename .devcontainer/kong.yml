@@ -44,8 +44,8 @@ services:
           exposed_headers:
             - Content-Length
             - Content-Range
-          credentials: true
           max_age: 3600
+          preflight_continue: false
       - name: key-auth
         config:
           hide_credentials: false
@@ -80,8 +80,8 @@ services:
           exposed_headers:
             - Content-Length
             - Content-Range
-          credentials: true
           max_age: 3600
+          preflight_continue: false
       - name: key-auth
         config:
           hide_credentials: false
@@ -110,8 +110,8 @@ services:
             - Authorization
             - Content-Type
             - apikey
-          credentials: true
           max_age: 3600
+          preflight_continue: false
       - name: key-auth
         config:
           hide_credentials: false
